@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>SuperDev </title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      background: #f9fafb;
+    }
+
+    /* ── HEADER ── */
+    .header {
+      background: #161d16;
+      padding: 14px 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-shrink: 0;
+      border-bottom: 1px solid #2a3a2a;
+    }
+    .logo-text { font-size: 22px; font-weight: 800; line-height: 1; }
+    .logo-text .super { color: #fff; }
+    .logo-text .dev   { color: #00e676; }
+    .header-sub { color: #6b7280; font-size: 11px; margin-top: 3px; }
+    .dot { width: 8px; height: 8px; background: #00e676; border-radius: 50%; box-shadow: 0 0 6px #00e676; margin-right: auto; }
+
+    /* ── MESSAGES ── */
+    .messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .messages::-webkit-scrollbar { width: 4px; }
+    .messages::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 4px; }
+
+    .welcome-card {
+      background: linear-gradient(135deg, #161d16 0%, #1a2e1a 100%);
+      border-radius: 14px;
+      padding: 22px;
+      text-align: center;
+      color: #fff;
+    }
+    .welcome-card h2 { font-size: 17px; font-weight: 700; margin: 10px 0 5px; }
+    .welcome-card p  { font-size: 12px; color: #9ca3af; line-height: 1.5; }
+
+    .chips { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+    .chip {
+      background: #fff; border: 1px solid #e5e7eb;
+      border-radius: 20px; padding: 6px 14px;
+      font-size: 12px; color: #374151;
+      cursor: pointer; transition: all .15s;
+    }
+    .chip:hover { background: #f0fdf4; border-color: #00e676; color: #065f46; }
+
+    .msg { display: flex; gap: 10px; align-items: flex-end; }
+    .msg.bot  { flex-direction: row; }
+    .msg.user { flex-direction: row-reverse; }
+
+    .avatar {
+      width: 32px; height: 32px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .bubble {
+      max-width: 78%; padding: 10px 14px;
+      border-radius: 18px; font-size: 13.5px; line-height: 1.6;
+      white-space: pre-wrap; word-break: break-word;
+    }
+    .msg.bot  .bubble { background: #fff; color: #111827; border-bottom-right-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+    .msg.user .bubble { background: #161d16; color: #fff; border-bottom-left-radius: 4px; }
+
+    .typing-dots { display: flex; gap: 4px; padding: 4px 2px; align-items: center; }
+    .typing-dots span { width: 7px; height: 7px; background: #9ca3af; border-radius: 50%; animation: bounce 1.2s infinite; }
+    .typing-dots span:nth-child(2) { animation-delay: .2s; }
+    .typing-dots span:nth-child(3) { animation-delay: .4s; }
+    @keyframes bounce { 0%,60%,100% { transform: translateY(0); } 30% { transform: translateY(-6px); } }
+
+    /* ── INPUT ── */
+    .input-area { padding: 12px 16px 16px; background: #fff; border-top: 1px solid #f0f0f0; flex-shrink: 0; }
+    .input-wrap {
+      display: flex; align-items: center; gap: 10px;
+      background: #f3f4f6; border-radius: 24px;
+      padding: 8px 8px 8px 16px;
+      border: 1.5px solid transparent; transition: border-color .2s;
+    }
+    .input-wrap:focus-within { border-color: #00e676; background: #fff; }
+    .input-wrap input {
+      flex: 1; border: none; background: transparent;
+      outline: none; font-size: 14px; color: #111827; direction: rtl;
+    }
+    .input-wrap input::placeholder { color: #9ca3af; }
+    .send-btn {
+      width: 36px; height: 36px; background: #161d16;
+      border: none; border-radius: 50%; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: background .15s; flex-shrink: 0;
+    }
+    .send-btn:hover   { background: #00c853; }
+    .send-btn:disabled { background: #9ca3af; cursor: not-allowed; }
+    .powered { text-align: center; font-size: 10px; color: #d1d5db; margin-top: 6px; }
+    .powered span { color: #00e676; }
+  </style>
+</head>
+<body>
+
+  <!-- HEADER -->
+  <div class="header">
+    <svg width="36" height="36" viewBox="0 0 40 40" fill="none">
+      <polyline points="14,10 6,20 14,30" stroke="url(#g)" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+      <line x1="20" y1="7" x2="26" y2="33" stroke="url(#g)" stroke-width="3.5" stroke-linecap="round"/>
+      <polyline points="30,10 38,20 30,30" stroke="url(#g)" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+      <defs>
+        <linearGradient id="g" x1="0" y1="0" x2="40" y2="40" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stop-color="#4a7cc7"/><stop offset="100%" stop-color="#00e676"/>
+        </linearGradient>
+      </defs>
+    </svg>
+    <div>
+      <div class="logo-text"><span class="super">Super</span><span class="dev">Dev</span></div>
+      <div class="header-sub">AI Development Copilot — ITK · PLM · SAP</div>
+    </div>
+    <div class="dot"></div>
+  </div>
+
+  <!-- MESSAGES -->
+  <div class="messages" id="messages">
+
+    <div class="welcome-card">
+      <svg width="44" height="44" viewBox="0 0 40 40" fill="none">
+        <polyline points="14,10 6,20 14,30" stroke="url(#gw)" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <line x1="20" y1="7" x2="26" y2="33" stroke="url(#gw)" stroke-width="3.5" stroke-linecap="round"/>
+        <polyline points="30,10 38,20 30,30" stroke="url(#gw)" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <defs>
+          <linearGradient id="gw" x1="0" y1="0" x2="40" y2="40" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stop-color="#4a7cc7"/><stop offset="100%" stop-color="#00e676"/>
+          </linearGradient>
+        </defs>
+      </svg>
+      <h2>ברוך הבא ל<span style="color:#00e676">SuperDev</span></h2>
+      <p>שאל אותי על ITK, PLM, SAP ועוד</p>
+    </div>
+
+    <div class="chips" id="chips">
+      <div class="chip" onclick="sendChip(this)">How do I create an item revision in ITK?</div>
+      <div class="chip" onclick="sendChip(this)">Generate C++ code using AOM_save</div>
+      <div class="chip" onclick="sendChip(this)">What is ITEM_create_item signature?</div>
+    </div>
+
+    <div class="msg bot">
+      <div class="avatar" style="background:#161d16">
+        <svg width="18" height="18" viewBox="0 0 40 40" fill="none">
+          <polyline points="14,10 6,20 14,30" stroke="#00e676" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+          <line x1="20" y1="7" x2="26" y2="33" stroke="#00e676" stroke-width="3.5" stroke-linecap="round"/>
+          <polyline points="30,10 38,20 30,30" stroke="#4a7cc7" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div class="bubble">שלום! אני SuperDev — הסייע שלך ל-ITK ו-PLM. 👋</div>
+    </div>
+
+  </div>
+
+  <!-- INPUT -->
+  <div class="input-area">
+    <div class="input-wrap">
+      <input id="userInput" type="text" placeholder="שאל על ITK, PLM, C++..." onkeydown="if(event.key==='Enter') sendMessage()"/>
+      <button class="send-btn" id="sendBtn" onclick="sendMessage()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+        </svg>
+      </button>
+    </div>
+    <div class="powered">Powered by <span>Azure AI Foundry · IAI-Hackathon</span></div>
+  </div>
+
+<script>
+  const messagesEl = document.getElementById('messages');
+  const inputEl    = document.getElementById('userInput');
+  const sendBtn    = document.getElementById('sendBtn');
+  let conversationId = null;
+  let convToken = null;
+
+  async function initConversation() {
+    const res = await fetch('/api/conversations', { method: 'POST' });
+    if (!res.ok) throw new Error(`Init failed: ${res.status}`);
+    const data = await res.json();
+    conversationId = data.conversationId;
+    convToken = data.token;
+  }
+
+  const BOT_SVG = `<svg width="18" height="18" viewBox="0 0 40 40" fill="none">
+    <polyline points="14,10 6,20 14,30" stroke="#00e676" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+    <line x1="20" y1="7" x2="26" y2="33" stroke="#00e676" stroke-width="3.5" stroke-linecap="round"/>
+    <polyline points="30,10 38,20 30,30" stroke="#4a7cc7" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>`;
+  const USER_SVG = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round">
+    <circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
+  </svg>`;
+
+  function addMsg(text, who) {
+    const div = document.createElement('div');
+    div.className = `msg ${who}`;
+    const av = document.createElement('div');
+    av.className = 'avatar';
+    av.style.background = who === 'user' ? '#4a7cc7' : '#161d16';
+    av.innerHTML = who === 'bot' ? BOT_SVG : USER_SVG;
+    const bubble = document.createElement('div');
+    bubble.className = 'bubble';
+    bubble.textContent = text;
+    div.appendChild(av);
+    div.appendChild(bubble);
+    messagesEl.appendChild(div);
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+  }
+
+  function showTyping() {
+    const div = document.createElement('div');
+    div.className = 'msg bot'; div.id = 'typing';
+    div.innerHTML = `<div class="avatar" style="background:#161d16">${BOT_SVG}</div>
+      <div class="bubble"><div class="typing-dots"><span></span><span></span><span></span></div></div>`;
+    messagesEl.appendChild(div);
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+  }
+
+  async function sendMessage() {
+    const text = inputEl.value.trim();
+    if (!text) return;
+    inputEl.value = '';
+    document.getElementById('chips').style.display = 'none';
+    addMsg(text, 'user');
+    sendBtn.disabled = true;
+    showTyping();
+    try {
+      // Init conversation on first message
+      if (!conversationId) await initConversation();
+
+      // Send message
+      await fetch(`/api/conversations/${conversationId}/activities`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'message', from: { id: 'user' }, text })
+      });
+
+      // Poll for reply
+      let reply = null;
+      let watermark = null;
+      for (let i = 0; i < 15; i++) {
+        await new Promise(r => setTimeout(r, 1000));
+        const url = `/api/conversations/${conversationId}/activities` + (watermark ? `?watermark=${watermark}` : '');
+        const r = await fetch(url);
+        const d = await r.json();
+        watermark = d.watermark;
+        const botMsgs = (d.activities || []).filter(a => a.type === 'message' && a.from?.role !== 'user');
+        if (botMsgs.length > 0) { reply = botMsgs.map(m => m.text).join('\n'); break; }
+      }
+
+      document.getElementById('typing')?.remove();
+      addMsg(reply || '(אין תגובה)', 'bot');
+    } catch (e) {
+      document.getElementById('typing')?.remove();
+      addMsg('שגיאה: ' + e.message, 'bot');
+    } finally {
+      sendBtn.disabled = false;
+      inputEl.focus();
+    }
+  }
+
+  function sendChip(el) {
+    inputEl.value = el.textContent;
+    document.getElementById('chips').style.display = 'none';
+    sendMessage();
+  }
+</script>
+</body>
+</html>
