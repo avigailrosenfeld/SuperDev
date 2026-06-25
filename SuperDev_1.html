@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SuperDev - AI Copilot</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        body { font-family: system-ui, -apple-system, sans-serif; }
+        .prose code {
+            direction: ltr; text-align: left; display: block;
+            background: #1e1e1e; color: #d4d4d4;
+            padding: 1rem; border-radius: 0.5rem;
+            overflow-x: auto; margin: 0.5rem 0;
+        }
+        .prose pre { background: transparent; padding: 0; }
+        .prose p { margin-bottom: 0.5rem; }
+        .prose ul { list-style: disc; padding-right: 1.5rem; margin-bottom: 0.5rem; }
+        #chat-window::-webkit-scrollbar { width: 4px; }
+        #chat-window::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
+        .typing-dot { animation: bounce 1.2s infinite; }
+        .typing-dot:nth-child(2) { animation-delay: .2s; }
+        .typing-dot:nth-child(3) { animation-delay: .4s; }
+        @keyframes bounce { 0%,60%,100% { transform: translateY(0); } 30% { transform: translateY(-5px); } }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-100 h-screen flex flex-col overflow-hidden">
+
+    <!-- HEADER -->
+    <header class="bg-slate-800 border-b border-slate-700 p-4 flex items-center justify-between shadow-lg flex-shrink-0">
+        <div class="flex items-center gap-3">
+            <!-- SuperDev Logo -->
+            <svg width="32" height="32" viewBox="0 0 40 40" fill="none">
+                <polyline points="14,10 6,20 14,30" stroke="url(#hg)" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+                <line x1="20" y1="7" x2="26" y2="33" stroke="url(#hg)" stroke-width="3.5" stroke-linecap="round"/>
+                <polyline points="30,10 38,20 30,30" stroke="url(#hg)" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+                <defs>
+                    <linearGradient id="hg" x1="0" y1="0" x2="40" y2="40" gradientUnits="userSpaceOnUse">
+                        <stop offset="0%" stop-color="#4a7cc7"/>
+                        <stop offset="100%" stop-color="#00e676"/>
+                    </linearGradient>
+                </defs>
+            </svg>
+            <div>
+                <h1 class="text-lg font-bold leading-none">
+                    <span class="text-white">Super</span><span class="text-emerald-400">Dev</span>
+                </h1>
+                <p class="text-xs text-slate-400 mt-0.5">AI Development Copilot</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-2">
+            <div id="status-indicator" class="w-2.5 h-2.5 bg-amber-500 rounded-full animate-pulse"></div>
+            <span id="status-text" class="text-xs bg-slate-700 px-3 py-1.5 rounded-md text-slate-300">מתחבר...</span>
+        </div>
+    </header>
+
+    <!-- MESSAGES -->
+    <main id="chat-window" class="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 max-w-4xl w-full mx-auto">
+        <div class="flex items-start gap-3 max-w-2xl" id="welcome-msg">
+            <div class="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center flex-shrink-0">
+                <svg width="16" height="16" viewBox="0 0 40 40" fill="none">
+                    <polyline points="14,10 6,20 14,30" stroke="#00e676" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    <line x1="20" y1="7" x2="26" y2="33" stroke="#00e676" stroke-width="3.5" stroke-linecap="round"/>
+                    <polyline points="30,10 38,20 30,30" stroke="#4a7cc7" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </div>
+            <div class="bg-slate-800 border border-slate-700 p-3.5 rounded-2xl rounded-tl-none shadow">
+                <p class="text-sm">שלום! אני SuperDev Copilot — הסייע שלך לפיתוח. מתחבר לשרת...</p>
+            </div>
+        </div>
+
+        <!-- Suggestion chips -->
+        <div id="chips" class="flex flex-wrap gap-2 pr-11">
+            <button onclick="sendChip(this)" class="text-xs bg-slate-800 border border-slate-600 hover:border-emerald-500 hover:text-emerald-400 px-3 py-1.5 rounded-full transition-all">מה אתה יודע לעזור בו?</button>
+            <button onclick="sendChip(this)" class="text-xs bg-slate-800 border border-slate-600 hover:border-emerald-500 hover:text-emerald-400 px-3 py-1.5 rounded-full transition-all">תן לי דוגמת קוד</button>
+            <button onclick="sendChip(this)" class="text-xs bg-slate-800 border border-slate-600 hover:border-emerald-500 hover:text-emerald-400 px-3 py-1.5 rounded-full transition-all">איך להשתמש ב-PLM?</button>
+        </div>
+    </main>
+
+    <!-- INPUT -->
+    <footer class="p-4 bg-slate-800 border-t border-slate-700 shadow-xl flex-shrink-0">
+        <div class="max-w-4xl w-full mx-auto flex gap-3">
+            <input
+                type="text"
+                id="user-input"
+                onkeydown="handleKeyPress(event)"
+                placeholder="המתן לחיבור..."
+                disabled
+                class="flex-1 bg-slate-900 border border-slate-700 p-3 rounded-xl focus:outline-none focus:border-emerald-500 text-sm transition-all disabled:opacity-50"
+            />
+            <button
+                onclick="sendMessage()"
+                id="send-btn"
+                disabled
+                class="bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed text-white p-3 px-6 rounded-xl font-medium transition-all shadow"
+            >שלח</button>
+        </div>
+        <p class="text-center text-xs text-slate-600 mt-2">Powered by SuperDev · Copilot Studio</p>
+    </footer>
+
+    <script>
+        let conversationId = '';
+        let watermark = '';
+
+        const BOT_AVATAR = `<div class="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center flex-shrink-0">
+            <svg width="16" height="16" viewBox="0 0 40 40" fill="none">
+                <polyline points="14,10 6,20 14,30" stroke="#00e676" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+                <line x1="20" y1="7" x2="26" y2="33" stroke="#00e676" stroke-width="3.5" stroke-linecap="round"/>
+                <polyline points="30,10 38,20 30,30" stroke="#4a7cc7" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg></div>`;
+
+        // ── Init conversation via proxy ──────────────────────────────────
+        window.addEventListener('DOMContentLoaded', initConversation);
+
+        async function initConversation() {
+            try {
+                const res = await fetch('/api/conversations', { method: 'POST' });
+                if (!res.ok) throw new Error(`${res.status}`);
+                const data = await res.json();
+                conversationId = data.conversationId;
+
+                setStatus('מחובר', true);
+                enableInput('שאל אותי משהו...');
+
+                // Update welcome message
+                document.querySelector('#welcome-msg p').textContent =
+                    'שלום! אני SuperDev Copilot — הסייע שלך לפיתוח. במה אוכל לעזור?';
+
+            } catch (e) {
+                setStatus(`שגיאת חיבור: ${e.message}`, false);
+                document.querySelector('#welcome-msg p').textContent =
+                    `לא ניתן להתחבר לשרת: ${e.message}`;
+            }
+        }
+
+        // ── Send message ─────────────────────────────────────────────────
+        async function sendMessage() {
+            const input = document.getElementById('user-input');
+            const text = input.value.trim();
+            if (!text || !conversationId) return;
+
+            input.value = '';
+            document.getElementById('chips').style.display = 'none';
+            addMessage(text, 'user');
+            setInputEnabled(false);
+            showTyping();
+
+            try {
+                // Send activity
+                await fetch(`/api/conversations/${conversationId}/activities`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ type: 'message', from: { id: 'user' }, text })
+                });
+
+                // Poll for reply
+                const reply = await pollActivities();
+                removeTyping();
+                addMessage(reply || '(אין תגובה)', 'bot');
+
+            } catch (e) {
+                removeTyping();
+                addMessage(`שגיאה: ${e.message}`, 'bot');
+            } finally {
+                setInputEnabled(true);
+                input.focus();
+            }
+        }
+
+        // ── Poll for bot activities ──────────────────────────────────────
+        async function pollActivities() {
+            for (let i = 0; i < 20; i++) {
+                await sleep(1000);
+                const url = `/api/conversations/${conversationId}/activities` +
+                    (watermark ? `?watermark=${watermark}` : '');
+                const res = await fetch(url);
+                if (!res.ok) continue;
+                const data = await res.json();
+                if (data.watermark) watermark = data.watermark;
+                const botMsgs = (data.activities || []).filter(
+                    a => a.type === 'message' && a.from?.role !== 'user'
+                );
+                if (botMsgs.length > 0) return botMsgs.map(m => m.text || '').join('\n');
+            }
+            return null;
+        }
+
+        // ── DOM helpers ──────────────────────────────────────────────────
+        function addMessage(text, who) {
+            const win = document.getElementById('chat-window');
+            const div = document.createElement('div');
+
+            if (who === 'user') {
+                div.className = 'flex justify-start flex-row-reverse items-start gap-3 max-w-2xl ml-auto';
+                div.innerHTML = `
+                    <div class="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center flex-shrink-0 text-xs font-bold">א</div>
+                    <div class="bg-emerald-700 p-3.5 rounded-2xl rounded-tr-none shadow text-sm">${escapeHtml(text)}</div>`;
+            } else {
+                div.className = 'flex items-start gap-3 max-w-2xl';
+                const parsed = typeof marked !== 'undefined' ? marked.parse(text) : escapeHtml(text);
+                div.innerHTML = `${BOT_AVATAR}
+                    <div class="bg-slate-800 border border-slate-700 p-3.5 rounded-2xl rounded-tl-none shadow prose prose-invert prose-sm max-w-none">${parsed}</div>`;
+            }
+
+            win.appendChild(div);
+            win.scrollTop = win.scrollHeight;
+        }
+
+        function showTyping() {
+            const win = document.getElementById('chat-window');
+            const div = document.createElement('div');
+            div.id = 'typing-indicator';
+            div.className = 'flex items-start gap-3';
+            div.innerHTML = `${BOT_AVATAR}
+                <div class="bg-slate-800 border border-slate-700 p-3.5 rounded-2xl rounded-tl-none shadow flex gap-1.5 items-center">
+                    <span class="typing-dot w-2 h-2 bg-slate-400 rounded-full"></span>
+                    <span class="typing-dot w-2 h-2 bg-slate-400 rounded-full"></span>
+                    <span class="typing-dot w-2 h-2 bg-slate-400 rounded-full"></span>
+                </div>`;
+            win.appendChild(div);
+            win.scrollTop = win.scrollHeight;
+        }
+
+        function removeTyping() {
+            document.getElementById('typing-indicator')?.remove();
+        }
+
+        function setStatus(text, ok) {
+            const dot = document.getElementById('status-indicator');
+            const label = document.getElementById('status-text');
+            dot.className = `w-2.5 h-2.5 rounded-full ${ok ? 'bg-emerald-500' : 'bg-red-500'}`;
+            label.textContent = text;
+        }
+
+        function enableInput(placeholder) {
+            const input = document.getElementById('user-input');
+            const btn = document.getElementById('send-btn');
+            input.disabled = false;
+            input.placeholder = placeholder;
+            btn.disabled = false;
+            input.focus();
+        }
+
+        function setInputEnabled(enabled) {
+            document.getElementById('user-input').disabled = !enabled;
+            document.getElementById('send-btn').disabled = !enabled;
+        }
+
+        function handleKeyPress(e) {
+            if (e.key === 'Enter' && !e.shiftKey) sendMessage();
+        }
+
+        function sendChip(el) {
+            document.getElementById('user-input').value = el.textContent;
+            sendMessage();
+        }
+
+        function escapeHtml(t) {
+            return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+        }
+
+        function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+    </script>
+</body>
+</html>
